@@ -1,16 +1,40 @@
 from socket import socket, AF_INET, SOCK_STREAM
 from time import sleep
-import sys, os
+import sys
+import os
+from config import DEFAULT_PORT
 sys.path.append(os.path.join(os.getcwd(), 'logger'))
 from logger.log import logger_decorator
 
 
+class Port:
+    def __init__(self, init_value=None, name='port_number'):
+        if not 1023 < init_value < 65536:
+            self.wrong_port(init_value)
+            exit()
+        self.value = init_value
+        self.name = name
+
+    def __get__(self, instance, owner):
+        return self.value
+
+    def __set__(self, instance, value):
+        if not 1023 < value < 65536:
+            self.wrong_port(value)
+            exit()
+        instance.__dict__[self.name] = value
+
+    @logger_decorator('critical')
+    def wrong_port(self, port):
+        print(f'Wrong port {port}')
+
+
 class ServerListener:
+    port: Port(DEFAULT_PORT)
     @logger_decorator('info')
-    def __init__(self, port: int, allowed: str = '', listen_timeout: int = 5):
+    def __init__(self, allowed: str = '', listen_timeout: int = 5):
         self.socket = socket(AF_INET, SOCK_STREAM)
         self.allowed = allowed
-        self.port = port
         self.listen_time = listen_timeout
         self.active = []
 
@@ -39,6 +63,6 @@ class ServerListener:
 
 
 if __name__ == '__main__':
-    MS = ServerListener(8888)
+    MS = ServerListener()
     MS.start_listen()
     MS.answer_connections()
